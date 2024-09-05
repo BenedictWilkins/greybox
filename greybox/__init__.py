@@ -1,6 +1,5 @@
 """TODO."""
 
-from .utils import extract_icons
+from . import utils
 
-
-__all__ = ("extract_icons",)
+__all__ = ("utils",)
