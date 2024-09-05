@@ -8,8 +8,10 @@ from ._file_utils import (
     find_all_files_with_keyword,
 )
 from ._image_utils import color_visual, convert_to_png
+from . import dataset
 
 __all__ = (
+    "dataset",
     "FileExtractor",
     "color_visual",
     "convert_to_png",

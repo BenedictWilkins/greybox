@@ -6,11 +6,15 @@ authors = [{ name = "Benedict Wilkins", email = "benrjw@gmail.com" }]
 license = { file = "LICENSE" }
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["patoolib"]
+dependencies = ["patool"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project.scripts]
+convert_png = "greybox.cli.aspng:main"
+
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.

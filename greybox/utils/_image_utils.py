@@ -19,7 +19,7 @@ def convert_to_png(input_path: str | Path, output_path: str | Path | None = None
             return output_path
 
     except Exception as e:
-        return input_path
+        return None
 
 
 def color_visual(
