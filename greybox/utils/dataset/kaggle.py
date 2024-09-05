@@ -2,8 +2,6 @@ from pathlib import Path
 from kaggle.api.kaggle_api_extended import KaggleApi
 import os
 
-from .._file_utils import extract_archive
-
 
 def download_dataset(
     repo_id: str,
@@ -37,11 +35,18 @@ def download_dataset(
 
     path = Path(path).expanduser().resolve()
     dataset_name = repo_id.split("/")[-1]
-    zip_exists = (path / dataset_name).with_suffix(".zip").exists()
-    if not zip_exists or force:
+    # this file indicates that the dataset has already been downloaded and extracted
+    dataset_lock_path = (path / f".{dataset_name}").with_suffix("")
+    dataset_zip_path = (path / dataset_name).with_suffix(".zip")
+    exists = dataset_lock_path.exists() or dataset_zip_path.exists()
+
+    if not exists or force:
         # zip doesnt exist, or we are force re-downloading it
         path.mkdir(exist_ok=True, parents=True)
         api.dataset_download_files(
             repo_id, path=path.as_posix(), force=force, unzip=unzip, quiet=quiet
         )
+    if not dataset_lock_path.exists():
+        # create empty file to indicate the download completed
+        open(dataset_lock_path.as_posix(), "w")
     return path

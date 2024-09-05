@@ -39,36 +39,6 @@ if not appid_dataset_path.exists():
             f.write("\n")
 
 
-@ray.remote
-def scrape(appids: list[str], path: str | Path):
-    columns = [
-        "appId",
-        "genre",
-        "categories",
-        "icon",
-        "headerImage",
-        "video",
-        "videoImage",
-        "price",
-        "title",
-        "summary",
-        "description",
-    ]
-    results = []
-    for id_ in appids:
-        try:
-            result = app(id_, lang="en", country="us")
-            result["categories"] = [x["name"] for x in result["categories"]]
-            results.append(result)
-        except exceptions.NotFoundError as e:
-            pass  # this app was not found, this happens often
-    total = len(results)
-    df = pd.DataFrame(data=results, columns=columns)
-    df = df.rename(columns={c: c.lower() for c in columns})
-    df.to_csv(path.as_posix(), index=False)
-    return total
-
-
 # Main function to handle chunking and task management
 def scrape_all(
     appids: list[str], path: str | Path, chunk_size: int = 100, num_tasks: int = 5
@@ -114,6 +84,39 @@ def scrape_all(
             pass  # No more chunks to process
 
 
+def scrape(appids: list[str], path: str | Path, pbar: tqdm):
+    columns = [
+        "appId",
+        "genre",
+        "categories",
+        "icon",
+        "headerImage",
+        "video",
+        "videoImage",
+        "price",
+        "title",
+        "summary",
+        "description",
+    ]
+    results = []
+    pbar.reset()
+    for id_ in appids:
+        pbar.update(1)
+        try:
+            result = app(id_, lang="en", country="us")
+            result["categories"] = [x["name"] for x in result["categories"]]
+            results.append(result)
+        except exceptions.NotFoundError as e:
+            pass  # this app was not found, this happens often
+        except exceptions.ExtraHTTPError as e:
+            pass  # app was not found? internal server error?
+    total = len(results)
+    df = pd.DataFrame(data=results, columns=columns)
+    df = df.rename(columns={c: c.lower() for c in columns})
+    df.to_csv(path.as_posix(), index=False)
+    return total
+
+
 appids = set(pd.read_csv(open(appid_dataset_path.as_posix()), header=None)[0].tolist())
 game_metadata_path = kaggle_dataset_path / "game_metadata"
 
@@ -125,5 +128,17 @@ for meta_file in game_metadata_path.glob("*.csv"):
 print(f"Found {len(existing_appids)} existing appids")
 
 appids -= set(existing_appids)
+appids = list(appids)
 print(f"Scraping {len(appids)} games from play store...")
-scrape_all(appids, game_metadata_path, chunk_size=100, num_tasks=10)
+
+chunk_size = 100
+pbar = tqdm(range(0, len(appids), chunk_size))
+pbar_inner = tqdm()
+total = 0
+for i in pbar:
+    pbar.set_description(f"Total: {total}")
+    total += scrape(
+        appids[i : i + chunk_size],
+        game_metadata_path / f"game-data-{time.time_ns()}.csv",
+        pbar_inner,
+    )
