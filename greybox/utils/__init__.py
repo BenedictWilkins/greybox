@@ -7,14 +7,14 @@ from ._file_utils import (
     find_all_files,
     find_all_files_with_keyword,
 )
-from ._image_utils import color_visual, convert_to_png
+from . import _image_utils as image
+
 from . import dataset
 
 __all__ = (
     "dataset",
+    "image",
     "FileExtractor",
-    "color_visual",
-    "convert_to_png",
     "extract_icons",
     "extract_archive",
     "find_all_files",

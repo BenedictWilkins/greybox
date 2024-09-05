@@ -1,6 +1,34 @@
 import numpy as np
+import requests
+import os
 from pathlib import Path
 from PIL import Image
+from io import BytesIO
+from urllib.parse import urlparse
+
+
+def open(uri: str) -> Image:
+    """Open an image from a file or url.
+
+    Args:
+        uri (str): file path or url
+
+    Raises:
+        FileNotFoundError: if the file could not be found
+
+    Returns:
+        Image: pil image
+    """
+    if os.path.isfile(uri):
+        return Image.open(uri)
+    elif urlparse(uri).scheme in ("http", "https", "ftp"):
+        response = requests.get(uri)
+        if response.status_code == 200:
+            return Image.open(BytesIO(response.content))
+        else:
+            response.raise_for_status()
+    else:
+        raise FileNotFoundError(uri)
 
 
 def convert_to_png(input_path: str | Path, output_path: str | Path | None = None):
